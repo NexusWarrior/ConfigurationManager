@@ -44,6 +44,15 @@ CLI-приложение на Kotlin для анализа и визуализа
 пакета выводятся его прямые обратные зависимости — пакеты исследованного графа,
 которые от него зависят. Пустое множество обозначается как `(none)`.
 
+### Этап 5: Graphviz и PNG
+
+Приложение выводит текст графа на языке DOT (Graphviz) и сохраняет его PNG-копию
+по пути `--output`. PNG строится средствами Java2D, поэтому установка Graphviz
+не требуется. Сгенерированные изображения игнорируются Git как бинарные файлы.
+
+Сравнение со штатной командой `dotnet package list --include-transitive` и
+объяснение различий приведены в [отдельном документе](docs/nuget-comparison.md).
+
 ## Требования
 
 - JDK 25;
@@ -79,7 +88,7 @@ run.bat test
   --filter System
 ```
 
-Проверка обратных зависимостей в графе с циклом:
+Визуализация графа с циклом:
 
 ```shell
 ./run.sh \
@@ -99,6 +108,18 @@ run.bat test
   --test-mode true \
   --output filtered.png \
   --filter C
+```
+
+Три примера визуализации разных пакетов из тестового репозитория:
+
+```shell
+mkdir -p build/examples
+./run.sh --package A --repository tests/fixtures/repository.txt \
+  --test-mode true --output build/examples/A.png --filter Z
+./run.sh --package B --repository tests/fixtures/repository.txt \
+  --test-mode true --output build/examples/B.png --filter Z
+./run.sh --package C --repository tests/fixtures/repository.txt \
+  --test-mode true --output build/examples/C.png --filter Z
 ```
 
 Пример ошибки:

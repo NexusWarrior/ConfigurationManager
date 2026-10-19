@@ -14,7 +14,10 @@ fun main(args: Array<String>) {
         val config = CliParser.parse(args)
         val graph = DependencyGraphBuilder(packageSource(config), config.filter)
             .build(config.packageName)
-        printReverseDependencies(graph)
+        val dot = GraphvizExporter.toDot(graph)
+        println(dot)
+        GraphPngRenderer.render(graph, Path.of(config.outputFile))
+        println("PNG saved to ${config.outputFile}")
     } catch (exception: ConfigException) {
         fail(exception.message.orEmpty(), includeUsage = true)
     } catch (exception: RepositoryException) {
@@ -27,14 +30,6 @@ private fun packageSource(config: AppConfig): PackageSource {
         GraphFilePackageSource(Path.of(config.repository))
     } else {
         NuGetPackageSource(URI(config.repository))
-    }
-}
-
-private fun printReverseDependencies(graph: DependencyGraph) {
-    graph.nodes.forEach { packageName ->
-        val reverseDependencies = graph.reverseDependenciesOf(packageName)
-        val values = reverseDependencies.joinToString().ifBlank { "(none)" }
-        println("$packageName <- $values")
     }
 }
 
