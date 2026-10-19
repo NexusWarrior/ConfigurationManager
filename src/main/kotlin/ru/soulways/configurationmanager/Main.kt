@@ -14,7 +14,7 @@ fun main(args: Array<String>) {
         val config = CliParser.parse(args)
         val graph = DependencyGraphBuilder(packageSource(config), config.filter)
             .build(config.packageName)
-        printGraph(graph)
+        printReverseDependencies(graph)
     } catch (exception: ConfigException) {
         fail(exception.message.orEmpty(), includeUsage = true)
     } catch (exception: RepositoryException) {
@@ -30,11 +30,11 @@ private fun packageSource(config: AppConfig): PackageSource {
     }
 }
 
-private fun printGraph(graph: DependencyGraph) {
-    graph.adjacency.forEach { (packageName, dependencies) ->
-        val values = dependencies.takeIf(Set<String>::isNotEmpty)
-            ?.joinToString().orEmpty().ifBlank { "(none)" }
-        println("$packageName -> $values")
+private fun printReverseDependencies(graph: DependencyGraph) {
+    graph.nodes.forEach { packageName ->
+        val reverseDependencies = graph.reverseDependenciesOf(packageName)
+        val values = reverseDependencies.joinToString().ifBlank { "(none)" }
+        println("$packageName <- $values")
     }
 }
 
