@@ -1,7 +1,8 @@
 package ru.soulways.configurationmanager
 
-import kotlin.system.exitProcess
 import java.net.URI
+import java.nio.file.Path
+import kotlin.system.exitProcess
 
 /** CLI entry point for the dependency graph application. */
 fun main(args: Array<String>) {
@@ -11,11 +12,9 @@ fun main(args: Array<String>) {
     }
     try {
         val config = CliParser.parse(args)
-        if (config.testMode) {
-            throw ConfigException("Test repository mode becomes available at stage 3")
-        }
-        val metadata = NuGetPackageSource(URI(config.repository)).load(config.packageName)
-        printDependencies(metadata)
+        val graph = DependencyGraphBuilder(packageSource(config), config.filter)
+            .build(config.packageName)
+        printGraph(graph)
     } catch (exception: ConfigException) {
         fail(exception.message.orEmpty(), includeUsage = true)
     } catch (exception: RepositoryException) {
@@ -23,14 +22,19 @@ fun main(args: Array<String>) {
     }
 }
 
-private fun printDependencies(metadata: PackageMetadata) {
-    println("${metadata.id} ${metadata.version} direct dependencies:")
-    if (metadata.dependencies.isEmpty()) {
-        println("(none)")
+private fun packageSource(config: AppConfig): PackageSource {
+    return if (config.testMode) {
+        GraphFilePackageSource(Path.of(config.repository))
+    } else {
+        NuGetPackageSource(URI(config.repository))
     }
-    metadata.dependencies.forEach { dependency ->
-        val framework = dependency.targetFramework?.let { " [$it]" }.orEmpty()
-        println("- ${dependency.id} ${dependency.versionRange}$framework")
+}
+
+private fun printGraph(graph: DependencyGraph) {
+    graph.adjacency.forEach { (packageName, dependencies) ->
+        val values = dependencies.takeIf(Set<String>::isNotEmpty)
+            ?.joinToString().orEmpty().ifBlank { "(none)" }
+        println("$packageName -> $values")
     }
 }
 
